@@ -1,54 +1,37 @@
---[[
-	MovementController (LocalScript -> StarterPlayer.StarterPlayerScripts)
-
-	- Third person only: the camera is locked behind the character (no zooming into first person).
-	- The mouse is locked to the center and the character's body turns to face wherever the camera looks.
-	- Sprint key with smooth speed changes.
-	- The FOV is the base FOV plus a few layers that are added together (sprint, speed, falling).
-	  Camera bob and strafe tilt are added on top of the camera the same way.
-
-	Every tuning value is in CONFIG below.
-]]
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local CONFIG = {
-	-- Movement
 	WalkSpeed = 16,
 	SprintSpeed = 26,
-	Acceleration = 6, -- how quickly WalkSpeed eases toward its target (higher = snappier)
+	Acceleration = 6,
 	SprintKeys = { Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3 },
 
-	-- FOV layers (added together, then smoothed)
 	BaseFOV = 70,
-	SprintFOV = 8, -- added while sprinting and moving
-	SpeedFOV = 0.35, -- added per stud/s of horizontal speed above WalkSpeed
-	FallFOV = 0.15, -- added per stud/s of falling speed past FallFOVStart
+	SprintFOV = 8,
+	SpeedFOV = 0.35,
+	FallFOV = 0.15,
 	FallFOVStart = 30,
 	MaxFOV = 95,
 	FOVSmoothing = 7,
 
-	-- Camera
 	CameraDistance = 10,
-	CameraHeight = 2, -- pivot height above the HumanoidRootPart
-	ShoulderOffset = 1.5, -- sideways offset to the right; set to 0 for a centered camera
+	CameraHeight = 2,
+	ShoulderOffset = 1.5,
 	CollisionPadding = 0.5,
-	MouseSensitivity = 0.0035, -- radians per pixel
-	GamepadSensitivity = 4, -- radians per second at full stick
+	MouseSensitivity = 0.0035,
+	GamepadSensitivity = 4,
 	TouchSensitivity = 0.006,
 	MinPitch = math.rad(-70),
 	MaxPitch = math.rad(60),
-	FreeMouseKey = Enum.KeyCode.LeftAlt, -- hold to free the cursor (for clicking UI)
+	FreeMouseKey = Enum.KeyCode.LeftAlt,
 
-	-- Body
-	TurnSpeed = 20, -- how quickly the body turns to face the camera direction
+	TurnSpeed = 20,
 
-	-- Camera feel layers
 	BobAmount = 0.06,
 	BobFrequency = 9,
-	StrafeTilt = math.rad(2), -- camera roll at full strafe speed
+	StrafeTilt = math.rad(2),
 	TiltSmoothing = 8,
 }
 
@@ -69,7 +52,6 @@ local touchLookInputs = {}
 
 local character, humanoid, rootPart
 
--- Frame-rate independent smoothing factor
 local function smooth(rate, dt)
 	return 1 - math.exp(-rate * dt)
 end
@@ -87,17 +69,14 @@ local function onCharacterAdded(newCharacter)
 	humanoid = newCharacter:WaitForChild("Humanoid")
 	rootPart = newCharacter:WaitForChild("HumanoidRootPart")
 
-	humanoid.AutoRotate = false -- we rotate the body ourselves
+	humanoid.AutoRotate = false
 	humanoid.WalkSpeed = CONFIG.WalkSpeed
 
-	-- Start the camera behind wherever the character spawned facing
 	local look = rootPart.CFrame.LookVector
 	yaw = math.atan2(-look.X, -look.Z)
 	bodyYaw = yaw
 	pitch = 0
 end
-
--- Input ---------------------------------------------------------------------
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.KeyCode == CONFIG.FreeMouseKey then
@@ -136,8 +115,6 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- Per-frame update ----------------------------------------------------------
-
 local function updateMovement(dt)
 	local moving = humanoid.MoveDirection.Magnitude > 0.1
 	local sprinting = sprintHeld and moving
@@ -171,7 +148,7 @@ local function updateFOV(camera, dt, sprinting)
 end
 
 local function updateCamera(camera, dt)
-	-- Look input
+
 	if UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter then
 		local delta = UserInputService:GetMouseDelta()
 		yaw -= delta.X * CONFIG.MouseSensitivity
@@ -184,7 +161,6 @@ local function updateCamera(camera, dt)
 	local yawRotation = CFrame.Angles(0, yaw, 0)
 	local rotation = yawRotation * CFrame.Angles(pitch, 0, 0)
 
-	-- Position behind the character, pulled in if something is in the way
 	local pivot = rootPart.Position + Vector3.new(0, CONFIG.CameraHeight, 0)
 	local offset = rotation:VectorToWorldSpace(Vector3.new(CONFIG.ShoulderOffset, 0, CONFIG.CameraDistance))
 
@@ -199,7 +175,6 @@ local function updateCamera(camera, dt)
 		offset = offset.Unit * distance
 	end
 
-	-- Feel layers: head bob while moving on the ground, roll while strafing
 	local velocity = rootPart.AssemblyLinearVelocity
 	local horizontalSpeed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
 	local grounded = humanoid.FloorMaterial ~= Enum.Material.Air
@@ -224,7 +199,6 @@ if player.Character then
 	task.spawn(onCharacterAdded, player.Character)
 end
 
--- Run right after Roblox's default camera so our values win
 RunService:BindToRenderStep("MovementController", Enum.RenderPriority.Camera.Value + 1, function(dt)
 	local camera = workspace.CurrentCamera
 	if not camera then
