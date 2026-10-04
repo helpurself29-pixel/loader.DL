@@ -5,7 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Combat = ReplicatedStorage:WaitForChild("Combat")
 local Remote = Combat:WaitForChild("CombatRemote")
 local CombatConfig = require(Combat:WaitForChild("CombatConfig"))
-local AnimationIds = require(Combat:WaitForChild("AnimationIds"))
+local AnimationLookup = require(Combat:WaitForChild("AnimationLookup"))
 local VFXPlayer = require(Combat:WaitForChild("VFXPlayer"))
 
 local player = Players.LocalPlayer
@@ -35,18 +35,16 @@ local function getTrack(name)
 		return cached.Track
 	end
 
-	local id = AnimationIds[name]
-	if not id or id == "" or id == "rbxassetid://0" then
+	local animation, problem = AnimationLookup.Get(name)
+	if not animation then
 		if not warned[name] then
 			warned[name] = true
-			warn(`AnimationIds.{name} has no animation ID yet`)
+			warn(problem)
 		end
 		return nil
 	end
 
 	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
-	local animation = Instance.new("Animation")
-	animation.AnimationId = id
 	local track = animator:LoadAnimation(animation)
 	track.Priority = Enum.AnimationPriority.Action
 	tracks[name] = { Track = track, Parent = character }

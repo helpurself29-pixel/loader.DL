@@ -5,7 +5,7 @@ local RunService = game:GetService("RunService")
 local Combat = ReplicatedStorage:WaitForChild("Combat")
 local Remote = Combat:WaitForChild("CombatRemote")
 local CombatConfig = require(Combat:WaitForChild("CombatConfig"))
-local AnimationIds = require(Combat:WaitForChild("AnimationIds"))
+local AnimationLookup = require(Combat:WaitForChild("AnimationLookup"))
 
 local lastUsed = {}
 
@@ -51,14 +51,12 @@ local function findTargets(attacker, root, size, offset)
 end
 
 local function playOnNpc(character, animationName)
-	local id = AnimationIds[animationName]
+	local animation = AnimationLookup.Get(animationName)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
-	if not animator or not id or id == "" or id == "rbxassetid://0" then
+	if not animator or not animation then
 		return
 	end
-	local animation = Instance.new("Animation")
-	animation.AnimationId = id
 	local track = animator:LoadAnimation(animation)
 	track.Priority = Enum.AnimationPriority.Action
 	track:Play()
