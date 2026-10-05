@@ -51,6 +51,7 @@ def _call(system: str, prompt: str, *, schema: dict | None = None, effort: str =
             msg = s.get_final_message()
     else:
         msg = _client.beta.messages.create(**kwargs)
+    log.info("claude %s: %s in / %s out tokens", msg.model, msg.usage.input_tokens, msg.usage.output_tokens)
     if msg.stop_reason == "refusal":
         raise RuntimeError("Claude declined this request")
     return "".join(b.text for b in msg.content if b.type == "text").strip()
