@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # (e.g. Claude Code cloud environments don't pass it through to sessions).
     anthropic_api_key: str = Field("", validation_alias=AliasChoices("ANTHROPIC_API_KEY", "BIZBOT_ANTHROPIC_API_KEY"))
     claude_model: str = "claude-opus-5-5"
+    # Only needed for API keys not scoped to a workspace (the API then asks for an anthropic-workspace-id header).
+    anthropic_workspace_id: str = Field("", validation_alias=AliasChoices("ANTHROPIC_WORKSPACE_ID",
+                                                                          "BIZBOT_ANTHROPIC_WORKSPACE_ID"))
 
     # --- Google Places (finding businesses) ---
     google_places_api_key: str = ""

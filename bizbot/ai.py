@@ -12,7 +12,10 @@ from . import pricing
 from .config import settings
 
 log = logging.getLogger(__name__)
-_client = anthropic.Anthropic(api_key=settings.anthropic_api_key) if settings.anthropic_api_key else None
+_client = anthropic.Anthropic(
+    api_key=settings.anthropic_api_key,
+    default_headers={"anthropic-workspace-id": settings.anthropic_workspace_id} if settings.anthropic_workspace_id else None,
+) if settings.anthropic_api_key else None
 
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
