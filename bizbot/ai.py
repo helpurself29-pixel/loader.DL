@@ -12,7 +12,10 @@ from . import pricing
 from .config import settings
 
 log = logging.getLogger(__name__)
-_client = anthropic.Anthropic(api_key=settings.anthropic_api_key) if settings.anthropic_api_key else None
+_client = anthropic.Anthropic(
+    api_key=settings.anthropic_api_key,
+    default_headers={"anthropic-workspace-id": settings.anthropic_workspace_id} if settings.anthropic_workspace_id else None,
+) if settings.anthropic_api_key else None
 
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
@@ -48,6 +51,7 @@ def _call(system: str, prompt: str, *, schema: dict | None = None, effort: str =
             msg = s.get_final_message()
     else:
         msg = _client.beta.messages.create(**kwargs)
+    log.info("claude %s: %s in / %s out tokens", msg.model, msg.usage.input_tokens, msg.usage.output_tokens)
     if msg.stop_reason == "refusal":
         raise RuntimeError("Claude declined this request")
     return "".join(b.text for b in msg.content if b.type == "text").strip()

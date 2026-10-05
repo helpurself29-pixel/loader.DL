@@ -33,7 +33,7 @@ Open http://localhost:8000 (password `change-me`). With no keys set it runs in *
 
 | What | Where | Cost |
 |---|---|---|
-| Claude API key (`ANTHROPIC_API_KEY`) | console.anthropic.com | roughly $0.02–0.10 per lead (more for sample sites) |
+| Claude API key (`ANTHROPIC_API_KEY`, or `BIZBOT_ANTHROPIC_API_KEY` where that name is reserved, e.g. Claude Code cloud environments) | console.anthropic.com | roughly $0.02–0.10 per lead (more for sample sites) |
 | Google Places key (`GOOGLE_PLACES_API_KEY`) | Google Cloud console → enable "Places API (New)" | free monthly credit covers light use |
 | Outreach inbox (SMTP + IMAP) | Google Workspace or Zoho on a **separate domain** | ~$6–12/mo + ~$12/yr domain |
 | Hosting (so sample-site links work) | Railway, Render or a $5 VPS, with a persistent disk for `bizbot.db` | ~$5–10/mo |
