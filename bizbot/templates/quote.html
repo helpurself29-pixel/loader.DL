@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Quote for {{ lead.name }}{% endblock %}
+{% block body %}
+<div class="card" style="max-width:720px;margin:0 auto">
+  <div class="row" style="justify-content:space-between">
+    <div><h2 style="font-size:1.5rem">{{ settings.company_name }}</h2><div class="muted">{{ settings.company_tagline }}</div></div>
+    <div class="muted" style="text-align:right">Quote #Q-{{ '%04d' % lead.id }}<br>Prepared for <b>{{ lead.name }}</b></div>
+  </div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+  <table>
+    <tr><th>Service</th><th>One-time</th><th>Monthly</th></tr>
+    {% for l in quote.lines %}<tr><td>{{ l.name }}</td><td>${{ '{:,}'.format(l.setup) }}</td><td>{{ '$%d' % l.monthly if l.monthly else '–' }}</td></tr>{% endfor %}
+    {% if quote.discount %}<tr><td>Bundle discount (3+ services)</td><td>−${{ '{:,}'.format(quote.discount) }}</td><td></td></tr>{% endif %}
+    <tr><th>Total</th><th>${{ '{:,}'.format(quote.setup_due) }}</th><th>${{ quote.monthly_total }}/mo</th></tr>
+  </table>
+  {% if lead.sample_html %}<p style="margin-top:20px"><a class="btn" href="/s/{{ lead.token }}" target="_blank">See your free sample homepage →</a></p>{% endif %}
+  <p class="muted" style="margin-top:20px">50% of the one-time cost to start, 50% at launch. Monthly services can be cancelled anytime.
+    Questions? Just reply to the email{% if settings.owner_phone %} or call {{ settings.owner_phone }}{% endif %}.</p>
+</div>
+{% endblock %}

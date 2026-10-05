@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block body %}
+{% if paused %}<div class="banner paused">⏸ Paused: the AI won't send or reply to anything until you resume.</div>
+{% elif settings.dry_run %}<div class="banner dry">🧪 Dry run: emails are written and logged here but NOT sent. Set DRY_RUN=false to go live.</div>
+{% else %}<div class="banner live">✅ Live: emails are really being sent (limit {{ settings.daily_send_limit }}/day).</div>{% endif %}
+{% if settings.demo_mode %}<div class="banner dry">Demo data: no GOOGLE_PLACES_API_KEY set, so searches return sample businesses.</div>{% endif %}
+{% if not ai_on %}<div class="banner dry">No ANTHROPIC_API_KEY: using simple templates instead of AI-written emails and sites.</div>{% endif %}
+
+<div class="card row">
+  {% for s in statuses %}<a class="stat" href="/?status={{ s }}"><span class="muted">{{ s.replace('_',' ') }}</span><b>{{ counts.get(s, 0) }}</b></a>{% endfor %}
+  <div class="stat"><span class="muted">sent today</span><b>{{ sent_today }}/{{ settings.daily_send_limit }}</b></div>
+</div>
+
+<div class="grid2">
+<div>
+  <div class="card">
+    <h2>1 · Find businesses</h2>
+    <form method="post" action="/actions/find" class="row">
+      <input name="category" placeholder="plumber, salon, restaurant…" required>
+      <input name="city" placeholder="Austin, TX" required>
+      <select name="target">
+        <option value="weak_or_none">No website or a weak one</option>
+        <option value="no_website">No website only</option>
+        <option value="all">Everyone</option>
+      </select>
+      <input name="limit" type="number" value="20" min="1" max="60" style="width:80px">
+      <button>Find</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>2 · Run outreach</h2>
+    <div class="row">
+      <form method="post" action="/actions/intros"><button>Send intro emails</button></form>
+      <form method="post" action="/actions/followups"><button class="ghost">Send follow-ups</button></form>
+      <form method="post" action="/actions/replies"><button class="ghost">Check replies</button></form>
+      <form method="post" action="/actions/cycle"><button class="ok">▶ Run full cycle</button></form>
+      <form method="post" action="/actions/pause"><button class="{{ 'ok' if paused else 'warn' }}">{{ '▶ Resume AI' if paused else '⏸ Pause all AI' }}</button></form>
+    </div>
+    <p class="muted">Autopilot {{ 'ON: full cycle every %d min' % settings.cycle_minutes if settings.autopilot else 'OFF (set AUTOPILOT=true to run automatically)' }}.
+      {% if last_cycle %}Last cycle {{ last_cycle.at }}: {{ last_cycle.replies }} replies, {{ last_cycle.followups }} follow-ups, {{ last_cycle.intros }} intros.{% endif %}</p>
+  </div>
+
+  <div class="card">
+    <h2>Leads {% if filter %}<span class="pill">{{ filter }}</span> <a href="/" class="muted">clear</a>{% endif %}</h2>
+    <div class="table-wrap"><table>
+      <tr><th>Business</th><th>Status</th><th>Website</th><th>Est. revenue</th><th>Tier</th><th>Contact</th></tr>
+      {% for l in leads %}
+      <tr>
+        <td><a href="/leads/{{ l.id }}">{{ l.name }}</a><div class="muted">{{ l.category }} · ★{{ l.rating }} ({{ l.reviews }})</div></td>
+        <td><span class="pill {{ 'urgent' if l.status == 'negotiating' else 'hot' if l.status in ('interested','sample_sent','replied') else 'ok' if l.status == 'won' else '' }}">{{ l.status.replace('_',' ') }}</span>
+          {% if not l.autopilot and l.status not in ('lost','unsubscribed') %}<span class="pill">you</span>{% endif %}</td>
+        <td>{{ 'none' if not l.website else 'weak' }}</td>
+        <td>${{ '{:,}'.format(l.est_revenue or 0) }}</td>
+        <td>{{ l.tier }}</td>
+        <td class="muted">{{ l.email or l.phone }}</td>
+      </tr>
+      {% else %}<tr><td colspan="6" class="muted">No leads yet. Start with “Find businesses”.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+
+<div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2>Alerts</h2>
+      <form method="post" action="/actions/seen"><button class="ghost">Mark read</button></form></div>
+    {% for e in events %}
+      <div class="msg {{ 'in' if e.level != 'info' else '' }}" style="{{ '' if not e.seen else 'opacity:.6' }}">
+        {% if e.level != 'info' %}<span class="pill {{ e.level }}">{{ e.level }}</span> {% endif %}
+        {% if e.lead_id %}<a href="/leads/{{ e.lead_id }}">lead #{{ e.lead_id }}</a>: {% endif %}{{ e.text }}
+        <div class="muted" style="font-size:.8rem">{{ e.created_at }}</div>
+      </div>
+    {% else %}<p class="muted">Nothing yet.</p>{% endfor %}
+  </div>
+</div>
+</div>
+{% endblock %}

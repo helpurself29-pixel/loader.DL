@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ settings.company_name }} · Example websites{% endblock %}
+{% block body %}
+<h1>{{ settings.company_name }}</h1>
+<p class="muted">{{ settings.company_tagline }}. A few example designs:</p>
+<div class="row" style="align-items:stretch">
+  {% for s in sites %}
+  <a class="card" href="/showcase/{{ s.slug }}" target="_blank" style="flex:1;min-width:240px;color:inherit">
+    <h2>{{ s.name }}</h2><p class="muted">{{ s.category|title }} · {{ s.city }}</p><span class="btn">View site →</span>
+  </a>
+  {% endfor %}
+</div>
+<div class="card"><h2>What we do</h2>
+  <p>Mobile-friendly websites · AI chatbots that answer customers 24/7 · Online booking · Google Business Profile setup · Review automation · Hosting & support</p></div>
+{% endblock %}

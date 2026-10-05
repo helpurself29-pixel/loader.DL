@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ lead.name }} · BizBot{% endblock %}
+{% block body %}
+<p><a href="/">← All leads</a></p>
+{% if lead.autopilot %}
+<div class="banner live row" style="justify-content:space-between">🤖 The AI is handling this conversation.
+  <form method="post" action="/leads/{{ lead.id }}/takeover"><button class="warn">✋ Take over</button></form></div>
+{% else %}
+<div class="banner paused row" style="justify-content:space-between">✋ You're in control. The AI won't reply to this lead; you'll get an alert for each new message.
+  <form method="post" action="/leads/{{ lead.id }}/handback"><button class="ghost">Hand back to AI</button></form></div>
+{% endif %}
+
+<div class="grid2">
+<div>
+  <div class="card">
+    <h2>{{ lead.name }}</h2>
+    <p class="muted">{{ lead.category }} · {{ lead.address }}<br>
+      ★ {{ lead.rating }} ({{ lead.reviews }} reviews) · {{ lead.phone or 'no phone' }}
+      {% if lead.maps_url %} · <a href="{{ lead.maps_url }}" target="_blank">Google Maps</a>{% endif %}
+      {% if lead.website %} · <a href="{{ lead.website }}" target="_blank">current site</a>{% endif %}</p>
+    <p><b>Website check:</b> {{ lead.website_issues }}</p>
+    <p class="row">
+      {% if lead.sample_html %}<a class="btn" href="/s/{{ lead.token }}" target="_blank">View sample site</a>{% endif %}
+      <a class="btn" href="/quote/{{ lead.token }}" target="_blank" style="background:var(--ok)">View quote</a>
+      <form method="post" action="/leads/{{ lead.id }}/sample"><button class="ghost">{{ 'Regenerate' if lead.sample_html else 'Generate' }} sample site</button></form>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Conversation</h2>
+    {% for m in thread %}
+      <div class="msg {{ 'in' if m.direction == 'in' else m.sender }}">
+        <b>{{ {'lead': lead.name, 'ai': '🤖 AI', 'you': '🙋 You'}[m.sender] }}</b>
+        <span class="muted">· {{ m.kind }} · {{ m.created_at }}{% if m.status in ('dry_run','failed') %} · <span class="pill {{ 'urgent' if m.status == 'failed' else '' }}">{{ m.status.replace('_',' ') }}</span>{% endif %}</span>
+        {% if m.subject %}<div class="muted">Subject: {{ m.subject }}</div>{% endif %}
+        <div class="text">{{ m.body }}</div>
+      </div>
+    {% else %}<p class="muted">No messages yet.</p>{% endfor %}
+  </div>
+
+  <div class="card">
+    <h2>Write to them yourself</h2>
+    <form method="post" action="/leads/{{ lead.id }}/send">
+      <input name="subject" placeholder="Subject (blank = reply in the same thread)" style="width:100%;margin-bottom:8px">
+      <textarea name="body" placeholder="Your message…" required>{{ draft or '' }}</textarea>
+      <div class="row" style="margin-top:8px"><button class="ok">Send as me</button>
+        <span class="muted">Tip: take over first so the AI doesn't also reply.</span></div>
+    </form>
+    <form method="post" action="/leads/{{ lead.id }}/draft" class="row" style="margin-top:12px">
+      <input name="goal" placeholder="What should the draft do? e.g. offer a call Thursday" style="flex:1">
+      <button class="ghost">✨ AI draft for me to edit</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Test: simulate a reply from them</h2>
+    <form method="post" action="/leads/{{ lead.id }}/simulate">
+      <textarea name="body" placeholder="e.g. Yes! I'd love to see a sample. How much would it cost?" required></textarea>
+      <button class="ghost" style="margin-top:8px">Simulate reply</button>
+    </form>
+  </div>
+</div>
+
+<div>
+  <div class="card">
+    <h2>Details</h2>
+    <form method="post" action="/leads/{{ lead.id }}/update">
+      <label class="muted">Email</label><br><input name="email" value="{{ lead.email or '' }}" style="width:100%"><br><br>
+      <label class="muted">Status</label><br>
+      <select name="status">{% for s in statuses %}<option {{ 'selected' if s == lead.status }}>{{ s }}</option>{% endfor %}</select><br><br>
+      <label class="muted">Price tier (est. revenue ${{ '{:,}'.format(lead.est_revenue or 0) }}/yr)</label><br>
+      <select name="tier">{% for t in tiers %}<option {{ 'selected' if t == lead.tier }}>{{ t }}</option>{% endfor %}</select><br><br>
+      <label class="muted">Notes</label><textarea name="notes">{{ lead.notes or '' }}</textarea>
+      <button style="margin-top:8px">Save</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Services & quote</h2>
+    <form method="post" action="/leads/{{ lead.id }}/services">
+      {% set chosen = (lead.needs or '').split(',') %}
+      {% for key, s in services.items() %}
+        <label style="display:block"><input type="checkbox" name="needs" value="{{ key }}" {{ 'checked' if key in chosen }}> {{ s.name }}</label>
+      {% endfor %}
+      <button class="ghost" style="margin-top:8px">Update services</button>
+    </form>
+    <hr style="border:0;border-top:1px solid var(--line)">
+    {% for l in quote.lines %}<div class="row" style="justify-content:space-between"><span>{{ l.name }}</span>
+      <span>${{ l.setup }}{% if l.monthly %} + ${{ l.monthly }}/mo{% endif %}</span></div>{% endfor %}
+    {% if quote.discount %}<div class="row muted" style="justify-content:space-between"><span>Bundle discount</span><span>−${{ quote.discount }}</span></div>{% endif %}
+    <p><b>Setup ${{ quote.setup_due }}</b> · <b>${{ quote.monthly_total }}/mo</b> <span class="pill">{{ quote.tier }}</span></p>
+  </div>
+</div>
+</div>
+{% endblock %}

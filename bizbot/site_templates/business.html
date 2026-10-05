@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ b.name }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --p: {{ colors.primary }}; --a: {{ colors.accent }}; --bg: {{ colors.bg }}; --ink: {{ colors.ink }}; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.6; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; }
+  nav strong { font-size: 1.2rem; color: var(--p); }
+  .btn { display: inline-block; background: var(--p); color: #fff; padding: 12px 22px; border-radius: 999px;
+         text-decoration: none; font-weight: 600; }
+  .btn.alt { background: transparent; color: var(--p); border: 2px solid var(--p); }
+  .hero { padding: 72px 0 88px; background: linear-gradient(135deg, var(--p), var(--ink)); color: #fff;
+          position: relative; overflow: hidden; }
+  .hero::after { content: ""; position: absolute; width: 420px; height: 420px; border-radius: 50%;
+                 background: var(--a); opacity: .25; right: -120px; top: -120px; }
+  .hero h1 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.1; max-width: 640px; }
+  .hero p { margin: 18px 0 28px; font-size: 1.15rem; opacity: .9; max-width: 560px; }
+  .hero .btn { background: var(--a); color: var(--ink); }
+  .stars { margin-top: 26px; font-weight: 600; }
+  section { padding: 64px 0; }
+  h2 { font-size: 2rem; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+  .card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 6px 24px rgba(0,0,0,.06); }
+  .card .dot { width: 42px; height: 42px; border-radius: 12px; background: var(--a); margin-bottom: 14px; }
+  .contact { background: #fff; }
+  .map { height: 220px; border-radius: 16px; background: repeating-linear-gradient(45deg, var(--bg), var(--bg) 12px, #e9edf2 12px, #e9edf2 24px);
+         display: grid; place-items: center; color: #889; }
+  footer { padding: 30px 0 80px; text-align: center; font-size: .9rem; opacity: .7; }
+  .banner { position: fixed; bottom: 0; left: 0; right: 0; background: var(--ink); color: #fff; text-align: center;
+            padding: 10px; font-size: .85rem; }
+</style>
+</head>
+<body>
+<div class="wrap"><nav><strong>{{ b.name }}</strong>{% if b.phone %}<a class="btn" href="tel:{{ b.phone }}">Call {{ b.phone }}</a>{% endif %}</nav></div>
+<header class="hero"><div class="wrap">
+  <h1>{{ b.city.split(',')[0] }}'s trusted {{ b.category }}</h1>
+  <p>{{ b.name }} has served the community with care and quality. Get in touch today; we'd love to help.</p>
+  <a class="btn" href="{% if b.phone %}tel:{{ b.phone }}{% else %}#contact{% endif %}">Book now</a>
+  {% if b.rating %}<div class="stars">★ {{ b.rating }} on Google · {{ b.reviews }} reviews</div>{% endif %}
+</div></header>
+<section><div class="wrap">
+  <h2>What we offer</h2>
+  <div class="grid">{% for s in services %}<div class="card"><div class="dot"></div><h3>{{ s }}</h3>
+    <p>Friendly, reliable service from a local team that takes pride in the work.</p></div>{% endfor %}</div>
+</div></section>
+<section class="contact" id="contact"><div class="wrap grid">
+  <div><h2>Visit or call</h2><p>{{ b.address or b.city }}</p>{% if b.phone %}<p><strong>{{ b.phone }}</strong></p>{% endif %}
+    <p>Mon–Fri 9am–6pm · Sat 10am–4pm</p><br><a class="btn alt" href="#contact">Send a message</a></div>
+  <div class="map">Map</div>
+</div></section>
+<footer>© {{ b.name }}</footer>
+{% if banner %}<div class="banner">Sample design by {{ company }}</div>{% endif %}
+</body>
+</html>

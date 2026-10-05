@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}BizBot{% endblock %}</title>
+<style>
+  :root { --bg: #f5f6f8; --card: #fff; --ink: #1c2230; --muted: #6b7385; --line: #e3e6ec;
+          --brand: #2f5bea; --hot: #e8590c; --urgent: #d6336c; --ok: #2b8a3e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #12151c; --card: #1b2029; --ink: #e8ebf1; --muted: #9aa3b5; --line: #2b3240; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; background: var(--bg); color: var(--ink); }
+  a { color: var(--brand); text-decoration: none; }
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+               padding: 14px 20px; background: var(--card); border-bottom: 1px solid var(--line); }
+  header.top b { font-size: 1.1rem; }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  button, .btn { font: inherit; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer;
+                 background: var(--brand); color: #fff; font-weight: 600; display: inline-block; }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  button.warn { background: var(--urgent); }
+  button.ok { background: var(--ok); }
+  input, select, textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+                            background: var(--bg); color: var(--ink); }
+  textarea { width: 100%; min-height: 120px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: .85rem; }
+  .table-wrap { overflow-x: auto; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .8rem; background: var(--line); }
+  .pill.hot { background: var(--hot); color: #fff; } .pill.urgent { background: var(--urgent); color: #fff; }
+  .pill.ok { background: var(--ok); color: #fff; }
+  .muted { color: var(--muted); }
+  .stat { min-width: 110px; } .stat b { display: block; font-size: 1.5rem; }
+  .banner { padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; font-weight: 600; }
+  .banner.dry { background: #fff3bf; color: #5c4400; } .banner.live { background: #d3f9d8; color: #1b4d23; }
+  .banner.paused { background: #ffe3e3; color: #7a1414; }
+  .msg { border-left: 4px solid var(--line); padding: 8px 12px; margin: 10px 0; }
+  .msg .text { white-space: pre-wrap; }
+  .msg.in { border-color: var(--hot); } .msg.ai { border-color: var(--brand); } .msg.you { border-color: var(--ok); }
+  h2 { margin: 0 0 12px; font-size: 1.1rem; }
+</style>
+</head>
+<body>
+<header class="top"><b><a href="/">BizBot</a> · {{ settings.company_name }}</b>
+  <span class="row"><a href="/showcase" target="_blank">Showcase</a></span></header>
+<main>{% block body %}{% endblock %}</main>
+</body>
+</html>
