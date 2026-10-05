@@ -7,6 +7,8 @@ local Remote = Combat:WaitForChild("CombatRemote")
 local CombatConfig = require(Combat:WaitForChild("CombatConfig"))
 local AnimationLookup = require(Combat:WaitForChild("AnimationLookup"))
 
+require(ReplicatedStorage:WaitForChild("ForgeVFX")).init()
+
 local lastUsed = {}
 
 local function getParts(character)
