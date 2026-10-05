@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}BizBot{% endblock %}</title>
+{% set job = None if public else current_job() %}
 <style>
   :root { --bg: #f5f6f8; --card: #fff; --ink: #1c2230; --muted: #6b7385; --line: #e3e6ec;
           --brand: #2f5bea; --hot: #e8590c; --urgent: #d6336c; --ok: #2b8a3e; }
@@ -48,8 +49,16 @@
 </style>
 </head>
 <body>
-<header class="top"><b><a href="/">BizBot</a> · {{ settings.company_name }}</b>
-  <span class="row"><a href="/showcase" target="_blank">Showcase</a></span></header>
-<main>{% block body %}{% endblock %}</main>
+{% if not public %}<header class="top"><b><a href="/">BizBot</a> · {{ settings.company_name }}</b>
+  <span class="row"><a href="/showcase" target="_blank">Showcase</a> <a href="/logout">Log out</a></span></header>{% endif %}
+<main>{% if job %}<div class="banner dry">⏳ Working: {{ job }}. AI calls take ~10-60s each; this page refreshes by itself.</div>{% endif %}{% block body %}{% endblock %}</main>
+{% if job %}<script>
+  // Refresh while a background job runs, but never while you're typing.
+  setInterval(() => {
+    const el = document.activeElement;
+    const typing = el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT") && el.value;
+    if (!typing) location.reload();
+  }, 5000);
+</script>{% endif %}
 </body>
 </html>

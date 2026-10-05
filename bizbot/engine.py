@@ -46,7 +46,6 @@ def find_businesses(category: str, city: str, limit: int = 20, target: str = "we
             added += 1
         else:
             skipped += 1
-    db.add_event(None, "info", f"Search '{category}' in {city}: {added} new leads, {skipped} skipped")
     return {"found": len(found), "added": added, "skipped": skipped}
 
 

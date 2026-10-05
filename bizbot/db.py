@@ -71,7 +71,7 @@ def now() -> str:
 
 
 def connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(settings.database_path, check_same_thread=False)
+    conn = sqlite3.connect(settings.database_path, check_same_thread=False, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
 

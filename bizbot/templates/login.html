@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Log in · BizBot{% endblock %}
+{% block body %}
+<form class="card" method="post" action="/login" style="max-width:360px;margin:60px auto">
+  <h2>BizBot · {{ settings.company_name }}</h2>
+  {% if error %}<p style="color:var(--urgent)">Wrong password.</p>{% endif %}
+  <input type="password" name="password" placeholder="Dashboard password" autofocus required style="width:100%;margin-bottom:12px">
+  <button style="width:100%">Log in</button>
+  <p class="muted" style="font-size:.85rem">The password is DASHBOARD_PASSWORD in your .env file.</p>
+</form>
+{% endblock %}

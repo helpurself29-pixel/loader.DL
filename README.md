@@ -21,7 +21,7 @@ cp .env.example .env
 uvicorn bizbot.app:app --reload
 ```
 
-Open http://localhost:8000 (any username, password `change-me`). With no keys set it runs in **demo mode**
+Open http://localhost:8000 (password `change-me`). With no keys set it runs in **demo mode**
 (sample businesses) and **dry-run** (emails are shown in the dashboard, never sent). Try it:
 
 1. **Find businesses**: e.g. `plumber` in `Austin, TX`.

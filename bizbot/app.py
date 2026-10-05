@@ -1,4 +1,5 @@
 """Web dashboard + public pages. Run with:  uvicorn bizbot.app:app --reload"""
+import hashlib
 import json
 import logging
 import secrets
@@ -9,24 +10,21 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 
-from . import ai, db, engine, pricing, sites
+from . import ai, db, engine, jobs, pricing, sites
 from .config import settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("bizbot")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
-security = HTTPBasic()
+templates.env.globals["current_job"] = jobs.running
 
 
 def _scheduler():
     while True:
-        try:
-            log.info("autopilot cycle: %s", engine.run_cycle())
-        except Exception:
-            log.exception("autopilot cycle failed")
+        jobs.start("Autopilot cycle", engine.run_cycle, quiet_if_busy=True,
+                   done_message=lambda r: f"Autopilot cycle: {r}")
         time.sleep(settings.cycle_minutes * 60)
 
 
@@ -41,9 +39,34 @@ async def lifespan(_app):
 app = FastAPI(title="BizBot", lifespan=lifespan)
 
 
-def auth(creds: HTTPBasicCredentials = Depends(security)):
-    if not secrets.compare_digest(creds.password.encode(), settings.dashboard_password.encode()):
-        raise HTTPException(401, headers={"WWW-Authenticate": "Basic"})
+def _session_value() -> str:
+    return hashlib.sha256(f"bizbot:{settings.dashboard_password}".encode()).hexdigest()
+
+
+def auth(request: Request):
+    if not secrets.compare_digest(request.cookies.get("bizbot_session", ""), _session_value()):
+        raise HTTPException(303, headers={"Location": "/login"})
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request, error: str = ""):
+    return templates.TemplateResponse(request, "login.html", {"settings": settings, "public": True, "error": error})
+
+
+@app.post("/login")
+def login(password: str = Form(...)):
+    if not secrets.compare_digest(password.encode(), settings.dashboard_password.encode()):
+        return back("/login?error=1")
+    resp = back("/")
+    resp.set_cookie("bizbot_session", _session_value(), httponly=True, samesite="lax", max_age=60 * 60 * 24 * 30)
+    return resp
+
+
+@app.get("/logout")
+def logout():
+    resp = back("/login")
+    resp.delete_cookie("bizbot_session")
+    return resp
 
 
 def back(url: str = "/"):
@@ -65,21 +88,24 @@ def dashboard(request: Request, status: str | None = None):
 @app.post("/actions/find", dependencies=[Depends(auth)])
 def action_find(category: str = Form(...), city: str = Form(...), limit: int = Form(20),
                 target: str = Form("weak_or_none")):
-    engine.find_businesses(category.strip(), city.strip(), min(limit, 60), target)
+    jobs.start(f"Finding {category.strip()} in {city.strip()}", engine.find_businesses,
+               category.strip(), city.strip(), min(limit, 60), target,
+               done_message=lambda r: f"Search done: {r['added']} new leads, {r['skipped']} skipped")
     return back()
 
 
 @app.post("/actions/{name}", dependencies=[Depends(auth)])
 def action(name: str):
+    dry = " (dry run)" if settings.dry_run else ""
     if name == "intros":
-        n = engine.send_intros()
-        db.add_event(None, "info", f"Sent {n} intro emails" + (" (dry run)" if settings.dry_run else ""))
+        jobs.start("Writing & sending intro emails", engine.send_intros,
+                   done_message=lambda n: f"Sent {n} intro emails{dry}")
     elif name == "followups":
-        db.add_event(None, "info", f"Sent {engine.send_followups()} follow-ups")
+        jobs.start("Sending follow-ups", engine.send_followups, done_message=lambda n: f"Sent {n} follow-ups{dry}")
     elif name == "replies":
-        db.add_event(None, "info", f"Processed {engine.check_replies()} new replies")
+        jobs.start("Checking replies", engine.check_replies, done_message=lambda n: f"Processed {n} new replies")
     elif name == "cycle":
-        db.add_event(None, "info", f"Cycle: {engine.run_cycle()}")
+        jobs.start("Full cycle", engine.run_cycle, done_message=lambda r: f"Cycle: {r}")
     elif name == "pause":
         db.set_kv("paused", "0" if engine.is_paused() else "1")
     elif name == "seen":
@@ -138,14 +164,16 @@ def draft(request: Request, lead_id: int, goal: str = Form("Reply helpfully to t
 def simulate(lead_id: int, body: str = Form(...)):
     """Pretend the lead replied: lets you test the whole flow in dry-run mode."""
     db.get_lead(lead_id) or _404()
-    engine.handle_inbound(lead_id, body.strip(), subject="Re: (simulated)")
+    jobs.start(f"Handling reply from lead #{lead_id}", engine.handle_inbound, lead_id, body.strip(),
+               "Re: (simulated)", done_message=lambda r: f"Lead #{lead_id} reply handled ({r['intent']})")
     return back(f"/leads/{lead_id}")
 
 
 @app.post("/leads/{lead_id}/sample", dependencies=[Depends(auth)])
 def regenerate_sample(lead_id: int):
     lead = db.get_lead(lead_id) or _404()
-    db.update_lead(lead_id, sample_html=ai.sample_website(lead))
+    jobs.start(f"Designing sample site for {lead['name']}", _make_sample, lead_id,
+               done_message=lambda _: f"Sample site ready for lead #{lead_id}")
     return back(f"/leads/{lead_id}")
 
 
@@ -180,12 +208,12 @@ def sample_site(token: str):
 def quote_page(request: Request, token: str):
     lead = db.get_lead_by_token(token) or _404()
     return templates.TemplateResponse(request, "quote.html", {
-        "settings": settings, "lead": lead, "quote": engine.lead_quote(lead)})
+        "settings": settings, "lead": lead, "quote": engine.lead_quote(lead), "public": True})
 
 
 @app.get("/showcase", response_class=HTMLResponse)
 def showcase(request: Request):
-    return templates.TemplateResponse(request, "showcase.html", {"settings": settings, "sites": sites.SHOWCASE})
+    return templates.TemplateResponse(request, "showcase.html", {"settings": settings, "sites": sites.SHOWCASE, "public": True})
 
 
 @app.get("/showcase/{slug}", response_class=HTMLResponse)
@@ -201,8 +229,12 @@ def unsubscribe(request: Request, token: str):
         db.update_lead(lead["id"], status="unsubscribed", autopilot=0)
         db.add_event(lead["id"], "info", "Unsubscribed via link.")
     return templates.TemplateResponse(request, "message.html", {
-        "settings": settings, "title": "You're unsubscribed",
+        "settings": settings, "public": True, "title": "You're unsubscribed",
         "text": f"You won't receive any more emails from {settings.company_name}. Sorry for the bother!"})
+
+
+def _make_sample(lead_id: int):
+    db.update_lead(lead_id, sample_html=ai.sample_website(db.get_lead(lead_id)))
 
 
 def _404():
