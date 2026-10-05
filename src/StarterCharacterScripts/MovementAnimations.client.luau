@@ -17,8 +17,8 @@ local CONFIG = {
 	MaxPlaybackRate = 1.5,
 	PhaseCorrection = 0.08,
 
-	JumpStartFade = 0.08,
-	JumpToAirFade = 0.15,
+	JumpFade = 0.08,
+	FallFade = 0.15,
 	LandFadeIn = 0.08,
 	LandFadeOut = 0.25,
 	LandMovingWeight = 0.55,
@@ -60,7 +60,6 @@ local SETTINGS = {
 	["Back Walk"] = { Priority = Enum.AnimationPriority.Movement, Looped = true },
 	Crouch = { Priority = Enum.AnimationPriority.Idle, Looped = true },
 	["Crouch Walk"] = { Priority = Enum.AnimationPriority.Movement, Looped = true },
-	JumpStart = { Priority = Enum.AnimationPriority.Movement, Looped = false },
 	Jump = { Priority = Enum.AnimationPriority.Movement, Looped = false },
 	["Jump Landing"] = { Priority = Enum.AnimationPriority.Action, Looped = false },
 	["Big Fall Landing"] = { Priority = Enum.AnimationPriority.Action, Looped = false },
@@ -126,9 +125,6 @@ local function setSpeed(name, speed)
 end
 
 local function stopAir(fade)
-	if tracks.JumpStart and tracks.JumpStart.IsPlaying then
-		tracks.JumpStart:Stop(fade)
-	end
 	if tracks.Jump and tracks.Jump.IsPlaying then
 		tracks.Jump:Stop(fade)
 	end
@@ -153,30 +149,25 @@ local function land()
 	fallSpeed = 0
 end
 
-local function startAir(phase)
+local function startAir(fade)
 	if landingTrack then
-		landingTrack:Stop(CONFIG.JumpStartFade)
+		landingTrack:Stop(fade)
 		landingTrack = nil
 	end
-	if phase == "start" and tracks.JumpStart then
-		if tracks.Jump and tracks.Jump.IsPlaying then
-			tracks.Jump:Stop(CONFIG.JumpStartFade)
-		end
-		tracks.JumpStart:Play(CONFIG.JumpStartFade, 1, 1)
-		airPhase = "start"
-	else
-		if tracks.Jump then
-			tracks.Jump:Play(CONFIG.JumpToAirFade, 1, 1)
-		end
-		airPhase = "air"
+	local jump = tracks.Jump
+	if jump then
+		jump:Play(fade, 1, 1)
+		jump.TimePosition = 0
+		jump:AdjustSpeed(1)
 	end
+	airPhase = "air"
 end
 
 humanoid.StateChanged:Connect(function(_, new)
 	if new == Enum.HumanoidStateType.Jumping then
 		fallSpeed = 0
 		landedEarly = false
-		startAir("start")
+		startAir(CONFIG.JumpFade)
 	elseif new == Enum.HumanoidStateType.Freefall then
 		landedEarly = false
 		if not airPhase then
@@ -197,20 +188,7 @@ local function updateAir(velocity, dt)
 	if airPhase == "pending" then
 		airTimer += dt
 		if airTimer >= CONFIG.FallPoseDelay then
-			startAir("air")
-		end
-	end
-
-	if airPhase == "start" then
-		local start = tracks.JumpStart
-		if not start or not start.IsPlaying or start.TimePosition >= start.Length - CONFIG.JumpToAirFade then
-			if start then
-				start:Stop(CONFIG.JumpToAirFade)
-			end
-			if tracks.Jump then
-				tracks.Jump:Play(CONFIG.JumpToAirFade, 1, 1)
-			end
-			airPhase = "air"
+			startAir(CONFIG.FallFade)
 		end
 	end
 
