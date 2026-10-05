@@ -19,8 +19,7 @@ end
 
 local CLEANUP_FALLBACK = 15
 
-local function place(effect, targetCFrame)
-	local reference = CombatConfig.VFXReference
+local function place(effect, targetCFrame, reference)
 	local moves = {}
 
 	local function collect(instance)
@@ -48,16 +47,26 @@ local function place(effect, targetCFrame)
 	end
 end
 
-function VFXPlayer.Emit(name, targetCFrame)
+function VFXPlayer.Emit(name, targetCFrame, onlyChild)
 	local template = templates:FindFirstChild(name)
-	if not template then
-		warn("VFXPlayer: no effect named", name)
+	local reference = CombatConfig.VFXReferences[name]
+	if not template or not reference then
+		warn("VFXPlayer: no effect or reference named", name)
 		return
 	end
 
 	local effect = template:Clone()
-	place(effect, targetCFrame)
+	place(effect, targetCFrame, reference)
 	effect.Parent = effectsFolder
+
+	local target = effect
+	if onlyChild then
+		target = effect:FindFirstChild(onlyChild, true)
+		if not target then
+			effect:Destroy()
+			return
+		end
+	end
 
 	local cleaned = false
 	local function cleanup()
@@ -67,7 +76,7 @@ function VFXPlayer.Emit(name, targetCFrame)
 		end
 	end
 
-	local ok, env = pcall(vfx.emit, effect)
+	local ok, env = pcall(vfx.emit, target)
 	if ok and env and env.Finished then
 		env.Finished:finally(cleanup)
 	end

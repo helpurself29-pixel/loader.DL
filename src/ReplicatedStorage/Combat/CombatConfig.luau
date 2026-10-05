@@ -1,7 +1,21 @@
 local FPS = 60
 
 return {
-	VFXReference = CFrame.new(-61.768433, 3, 40.589294),
+	VFXReferences = {
+		Push = CFrame.new(-61.768433, 3, 40.589294),
+		Tackle = CFrame.new(-61.768433, 3, 40.589294),
+		["Walk-Run-Jump"] = CFrame.new(-76.380249, 3.10867, 40.514404),
+		["Jump-Land"] = CFrame.new(-85.258057, 3.126669, 40.542301),
+	},
+
+	MovementVFX = {
+		MaxDistance = 150,
+		MinAirTime = 0.2,
+		JumpUpSpeed = 8,
+		MinStepSpeed = 10,
+		StepMinRange = 0.25,
+		GroundCheckDistance = 3.6,
+	},
 
 	Push = {
 		Key = Enum.KeyCode.E,
