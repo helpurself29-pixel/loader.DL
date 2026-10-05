@@ -7,6 +7,8 @@ local CONFIG = {
 	SprintSpeed = 26,
 	Acceleration = 6,
 	SprintKeys = { Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3 },
+	CrouchSpeed = 8,
+	CrouchKeys = { Enum.KeyCode.C, Enum.KeyCode.ButtonB },
 
 	BaseFOV = 70,
 	SprintFOV = 8,
@@ -46,6 +48,7 @@ local bobTime = 0
 local bobWeight = 0
 
 local sprintHeld = false
+local crouching = false
 local freeMouseHeld = false
 local gamepadLook = Vector2.zero
 local touchLookInputs = {}
@@ -64,6 +67,13 @@ local function isSprintKey(keyCode)
 	return table.find(CONFIG.SprintKeys, keyCode) ~= nil
 end
 
+local function setCrouching(value)
+	crouching = value
+	if character then
+		character:SetAttribute("Crouching", value)
+	end
+end
+
 local function onCharacterAdded(newCharacter)
 	character = newCharacter
 	humanoid = newCharacter:WaitForChild("Humanoid")
@@ -71,6 +81,7 @@ local function onCharacterAdded(newCharacter)
 
 	humanoid.AutoRotate = false
 	humanoid.WalkSpeed = CONFIG.WalkSpeed
+	setCrouching(false)
 
 	local look = rootPart.CFrame.LookVector
 	yaw = math.atan2(-look.X, -look.Z)
@@ -87,6 +98,11 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 	if isSprintKey(input.KeyCode) then
 		sprintHeld = true
+		if crouching then
+			setCrouching(false)
+		end
+	elseif table.find(CONFIG.CrouchKeys, input.KeyCode) then
+		setCrouching(not crouching)
 	elseif input.UserInputType == Enum.UserInputType.Touch then
 		touchLookInputs[input] = true
 	end
@@ -117,8 +133,11 @@ end)
 
 local function updateMovement(dt)
 	local moving = humanoid.MoveDirection.Magnitude > 0.1
-	local sprinting = sprintHeld and moving
-	local targetSpeed = if sprinting then CONFIG.SprintSpeed else CONFIG.WalkSpeed
+	local sprinting = sprintHeld and moving and not crouching
+	local targetSpeed = if crouching
+		then CONFIG.CrouchSpeed
+		elseif sprinting then CONFIG.SprintSpeed
+		else CONFIG.WalkSpeed
 	humanoid.WalkSpeed += (targetSpeed - humanoid.WalkSpeed) * smooth(CONFIG.Acceleration, dt)
 	return sprinting
 end
