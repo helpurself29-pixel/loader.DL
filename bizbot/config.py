@@ -1,4 +1,5 @@
 """All settings come from environment variables or a .env file (see .env.example)."""
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,7 +27,9 @@ class Settings(BaseSettings):
     cycle_minutes: int = 15
 
     # --- Claude ---
-    anthropic_api_key: str = ""
+    # BIZBOT_ANTHROPIC_API_KEY also works, for hosts that reserve the ANTHROPIC_API_KEY name
+    # (e.g. Claude Code cloud environments don't pass it through to sessions).
+    anthropic_api_key: str = Field("", validation_alias=AliasChoices("ANTHROPIC_API_KEY", "BIZBOT_ANTHROPIC_API_KEY"))
     claude_model: str = "claude-opus-5-5"
 
     # --- Google Places (finding businesses) ---
