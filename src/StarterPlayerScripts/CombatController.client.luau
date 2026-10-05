@@ -54,14 +54,14 @@ end
 local function play(name)
 	local track = getTrack(name)
 	if track then
-		track:Play(0.05)
+		track:Play(0.1)
 	end
 end
 
 local function stop(name)
 	local cached = tracks[name]
 	if cached then
-		cached.Track:Stop(0.05)
+		cached.Track:Stop(0.15)
 	end
 end
 
