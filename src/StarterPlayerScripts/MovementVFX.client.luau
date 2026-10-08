@@ -24,7 +24,7 @@ local function newState()
 	for i in FEET do
 		feet[i] = { Min = math.huge, Max = -math.huge, Armed = false }
 	end
-	return { InAir = false, AirTime = 0, Feet = feet }
+	return { InAir = false, AirTime = 0, FallSpeed = 0, Feet = feet }
 end
 
 local function isGrounded(root)
@@ -93,11 +93,12 @@ RunService.Heartbeat:Connect(function(dt)
 
 		local velocity = root.AssemblyLinearVelocity
 		if isGrounded(root) then
-			if state.InAir and state.AirTime >= CONFIG.MinAirTime then
+			if state.InAir and state.AirTime >= CONFIG.MinAirTime and state.FallSpeed >= CONFIG.LandVFXMinFallSpeed then
 				VFXPlayer.Emit("Jump-Land", root.CFrame)
 			end
 			state.InAir = false
 			state.AirTime = 0
+			state.FallSpeed = 0
 
 			local speed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
 			if speed >= CONFIG.MinStepSpeed then
@@ -109,6 +110,7 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 			state.InAir = true
 			state.AirTime += dt
+			state.FallSpeed = math.max(state.FallSpeed, -velocity.Y)
 		end
 	end
 end)

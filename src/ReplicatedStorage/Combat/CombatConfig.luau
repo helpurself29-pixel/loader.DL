@@ -11,6 +11,7 @@ return {
 	MovementVFX = {
 		MaxDistance = 150,
 		MinAirTime = 0.2,
+		LandVFXMinFallSpeed = 65,
 		JumpUpSpeed = 8,
 		MinStepSpeed = 10,
 		StepMinRange = 0.25,
