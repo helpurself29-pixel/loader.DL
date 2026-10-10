@@ -7,8 +7,6 @@ local Remote = Combat:WaitForChild("CombatRemote")
 local CombatConfig = require(Combat:WaitForChild("CombatConfig"))
 local AnimationLookup = require(Combat:WaitForChild("AnimationLookup"))
 local VFXPlayer = require(Combat:WaitForChild("VFXPlayer"))
-local ClientSignals = require(Combat:WaitForChild("ClientSignals"))
-local CameraEffects = require(Combat:WaitForChild("CameraEffects"))
 
 local player = Players.LocalPlayer
 
@@ -101,7 +99,6 @@ local function ready(move, cooldown)
 		return false
 	end
 	lastUsed[move] = now
-	ClientSignals.Fire("MoveUsed", move, cooldown)
 	return true
 end
 
@@ -111,8 +108,6 @@ local function onPush(_, state)
 	end
 	if ready("Push", CombatConfig.Push.Cooldown) then
 		play("Push")
-		CameraEffects.Kick(2)
-		CameraEffects.Shake(0.35, 0.15)
 		Remote:FireServer("Push")
 	end
 	return Enum.ContextActionResult.Sink
@@ -129,23 +124,15 @@ local function onTackle(_, state)
 		play("TackleAttempt")
 		stopDash()
 		dash = applyVelocity(root, direction * config.DashSpeed, config.DashTime)
-		CameraEffects.Kick(7)
-		CameraEffects.Shake(0.5, 0.25)
 		Remote:FireServer("Tackle")
 	end
 	return Enum.ContextActionResult.Sink
 end
 
-ContextActionService:BindAction("Push", onPush, false, CombatConfig.Push.Key, CombatConfig.Push.GamepadButton)
-ContextActionService:BindAction("Tackle", onTackle, false, CombatConfig.Tackle.Key, CombatConfig.Tackle.GamepadButton)
-
-ClientSignals.Connect("Request", function(move)
-	if move == "Push" then
-		onPush(nil, Enum.UserInputState.Begin)
-	elseif move == "Tackle" then
-		onTackle(nil, Enum.UserInputState.Begin)
-	end
-end)
+ContextActionService:BindAction("Push", onPush, true, CombatConfig.Push.Key, CombatConfig.Push.GamepadButton)
+ContextActionService:BindAction("Tackle", onTackle, true, CombatConfig.Tackle.Key, CombatConfig.Tackle.GamepadButton)
+ContextActionService:SetTitle("Push", "Push")
+ContextActionService:SetTitle("Tackle", "Tackle")
 
 player.CharacterAdded:Connect(function()
 	tracks = {}
@@ -159,25 +146,11 @@ Remote.OnClientEvent:Connect(function(action, ...)
 		stopDash()
 		stop("TackleAttempt")
 		play("Tackler")
-		CameraEffects.Shake(1.6, 0.35)
-		CameraEffects.Kick(-5)
-		ClientSignals.Fire("HitConfirm", 1)
-	elseif action == "HitConfirm" then
-		local count = ...
-		CameraEffects.Shake(0.7, 0.18)
-		ClientSignals.Fire("HitConfirm", count)
-	elseif action == "Impact" then
-		CameraEffects.Shake(2.2, 0.45)
-		CameraEffects.Kick(-6)
-		ClientSignals.Fire("Hurt", 1)
 	elseif action == "Knockback" then
 		local velocity, duration = ...
 		local _, _, root = getParts()
 		if root then
 			applyVelocity(root, velocity, duration)
-			CameraEffects.Shake(1.4, 0.3)
-			CameraEffects.Kick(6)
-			ClientSignals.Fire("Hurt", 0.6)
 		end
 	elseif action == "Effect" then
 		local name, character = ...

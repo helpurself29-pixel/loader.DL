@@ -108,15 +108,10 @@ local function push(player, character, root)
 		if currentRoot then
 			local velocity = currentRoot.CFrame.LookVector * config.KnockbackForward
 				+ Vector3.new(0, config.KnockbackUp, 0)
-			local hits = 0
 			for target in findTargets(character, currentRoot, config.HitboxSize, config.HitboxOffset) do
 				if not target:GetAttribute("Grabbed") then
 					knockback(target, velocity, config.KnockbackTime)
-					hits += 1
 				end
-			end
-			if hits > 0 then
-				Remote:FireClient(player, "HitConfirm", hits)
 			end
 		end
 		character:SetAttribute("CombatBusy", nil)
@@ -137,10 +132,6 @@ local function landTackle(player, character, root, target)
 
 	Remote:FireClient(player, "TackleHit")
 	playAnimation(target, "Tackled")
-	local targetPlayer = Players:GetPlayerFromCharacter(target)
-	if targetPlayer then
-		Remote:FireClient(targetPlayer, "Impact")
-	end
 	Remote:FireAllClients("Effect", "Tackle", character)
 
 	task.delay(config.TacklerLength, function()

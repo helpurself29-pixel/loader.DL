@@ -1,9 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Combat = ReplicatedStorage:WaitForChild("Combat")
-local AnimationLookup = require(Combat:WaitForChild("AnimationLookup"))
-local CameraEffects = require(Combat:WaitForChild("CameraEffects"))
+local AnimationLookup = require(ReplicatedStorage:WaitForChild("Combat"):WaitForChild("AnimationLookup"))
 
 local CONFIG = {
 	WalkSpeed = 16,
@@ -30,8 +28,6 @@ local CONFIG = {
 	FallPoseDelay = 0.15,
 	GroundOffset = 3,
 	BigFallSpeed = 75,
-	LandDipPerSpeed = 0.06,
-	MaxLandDipSpeed = 140,
 }
 
 local character = script.Parent
@@ -140,10 +136,6 @@ local function land()
 	if fallSpeed < CONFIG.MinLandSpeed then
 		fallSpeed = 0
 		return
-	end
-	CameraEffects.Dip(math.min(fallSpeed, CONFIG.MaxLandDipSpeed) * CONFIG.LandDipPerSpeed)
-	if fallSpeed >= CONFIG.BigFallSpeed then
-		CameraEffects.Shake(math.clamp((fallSpeed - CONFIG.BigFallSpeed) / 40, 0.6, 2.2), 0.4)
 	end
 	local name = if fallSpeed >= CONFIG.BigFallSpeed then "Big Fall Landing" else "Jump Landing"
 	local track = tracks[name] or tracks["Jump Landing"]
