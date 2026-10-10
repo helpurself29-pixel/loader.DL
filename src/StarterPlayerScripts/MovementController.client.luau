@@ -1,6 +1,9 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+
+local CameraEffects = require(ReplicatedStorage:WaitForChild("Combat"):WaitForChild("CameraEffects"))
 
 local CONFIG = {
 	WalkSpeed = 16,
@@ -150,7 +153,7 @@ local function updateBody(dt)
 	rootPart.CFrame = CFrame.new(rootPart.Position) * CFrame.Angles(0, bodyYaw, 0)
 end
 
-local function updateFOV(camera, dt, sprinting)
+local function updateFOV(camera, dt, sprinting, fovImpulse)
 	local velocity = rootPart.AssemblyLinearVelocity
 	local horizontalSpeed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
 
@@ -163,11 +166,10 @@ local function updateFOV(camera, dt, sprinting)
 	fov = math.min(fov, CONFIG.MaxFOV)
 
 	currentFOV += (fov - currentFOV) * smooth(CONFIG.FOVSmoothing, dt)
-	camera.FieldOfView = currentFOV
+	camera.FieldOfView = math.clamp(currentFOV + fovImpulse, 1, 120)
 end
 
-local function updateCamera(camera, dt)
-
+local function updateCamera(camera, dt, shake, dip)
 	if UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter then
 		local delta = UserInputService:GetMouseDelta()
 		yaw -= delta.X * CONFIG.MouseSensitivity
@@ -206,8 +208,9 @@ local function updateCamera(camera, dt)
 	local targetTilt = -math.clamp(strafe / CONFIG.SprintSpeed, -1, 1) * CONFIG.StrafeTilt
 	currentTilt += (targetTilt - currentTilt) * smooth(CONFIG.TiltSmoothing, dt)
 
-	camera.CFrame = CFrame.new(pivot + offset)
+	camera.CFrame = CFrame.new(pivot + offset + dip)
 		* rotation
+		* shake
 		* CFrame.Angles(0, 0, currentTilt)
 		* CFrame.new(0, bob, 0)
 	camera.Focus = CFrame.new(pivot)
@@ -228,13 +231,16 @@ RunService:BindToRenderStep("MovementController", Enum.RenderPriority.Camera.Val
 	UserInputService.MouseBehavior = if freeMouseHeld
 		then Enum.MouseBehavior.Default
 		else Enum.MouseBehavior.LockCenter
+	UserInputService.MouseIconEnabled = freeMouseHeld
+
+	local shake, fovImpulse, dip = CameraEffects.Step(dt)
 
 	if not (character and humanoid and rootPart and rootPart.Parent) then
 		return
 	end
 
 	local sprinting = updateMovement(dt)
-	updateCamera(camera, dt)
+	updateCamera(camera, dt, shake, dip)
 	updateBody(dt)
-	updateFOV(camera, dt, sprinting)
+	updateFOV(camera, dt, sprinting, fovImpulse)
 end)
